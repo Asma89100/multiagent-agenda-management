@@ -2,6 +2,7 @@
 var Agent = function(name, values, agents, constraints) {
   this.name = name;
   this.agent_view = {};
+  this.agent_view_snapshot = {};
   this.values = values;
   this.current_value = values[0];
   this.nogood_list = Array();
@@ -12,10 +13,14 @@ var Agent = function(name, values, agents, constraints) {
     mailbox.push({"from" : this.name, "to" : this.agents[i], "type" : "ok?", "data" : {"x" : this.name, "d" : this.current_value}});
 };
 
+Agent.prototype.name = undefined;
+
 Agent.prototype.receive = function(msg) {
   if(msg.type === "ok?") {
     this.agent_view[msg.data.x] = msg.data.d;
     this.check_agent_view();
+
+    mailbox.push({"from" : this.name, "to" : msg.from, "type" : "ok!", "data" : {"x" : this.name, "d" : this.current_value}});
   } else if(msg.type === "nogood") {
     this.nogood_list.push(msg.data);
 
@@ -32,9 +37,13 @@ Agent.prototype.receive = function(msg) {
     if(old_value === this.current_value) {
       mailbox.push({"from" : this.name, "to" : msg.from, "type" : "ok?", "data" : {"x" : msg.from, "d" : this.current_value}});
     }
+
+    mailbox.push({"from" : this.name, "to" : msg.from, "type" : "ok!", "data" : {"x" : this.name, "d" : this.current_value}});
   } else if(msg.type === "reql") {
     this.agents.push(msg.from);
     mailbox.push({"from" : this.name, "to" : msg.from, "type" : "ok?", "data" : {"x" : this.name, "d" : this.current_value}});
+  } else if(msg.type === "ok!") {
+    this.agent_view_snapshot[msg.data.x] = msg.data.d
   }
 };
 
@@ -72,13 +81,13 @@ Agent.prototype.check_consistency = function(value) {
         ret_aux = true;
       }
     }
-    
+
     for(var agent in this.agent_view) {
       if(this.nogood_list[i][agent] !== undefined) {
         ret_aux = ret_aux || this.nogood_list[i][agent] !== this.agent_view[agent];
       }
     }
-    
+
     if(this.nogood_list[i][this.name] !== undefined) {
       ret_aux = ret_aux || this.nogood_list[i][this.name] !== value;
     }
@@ -126,24 +135,33 @@ var mailbox = Array();
 
 var main = function() {
 
-  var a1 = new Agent("a1", [1,2], ["a3"], {"a3" : [function(v1, v2){ return v1 !== v2; }]});
-  var a2 = new Agent("a2", [2], ["a3"], {"a3" : [function(v1, v2){ return v1 !== v2; }]});
-  var a3 = new Agent("a3", [1,2], [], {"a1" : [function(v1, v2){ return v1 !== v2; }], "a2" : [function(v1, v2){ return v1 !== v2; }]});
+  //var a1 = new Agent("a1", [1,2], ["a3"], {"a3" : [function(v1, v2){ return v1 !== v2; }]});
+  //var a2 = new Agent("a2", [2], ["a3"], {"a3" : [function(v1, v2){ return v1 !== v2; }]});
+  //var a3 = new Agent("a3", [1,2], [], {"a1" : [function(v1, v2){ return v1 !== v2; }], "a2" : [function(v1, v2){ return v1 !== v2; }]});
+
+  var fun = function(v1,v2) { return v1===v2; };
+  var a1 = new Agent("a1", [1,2,3], ["a2", "a3", "a4"], {"a2" : [fun], "a2" : [fun], "a3" : [fun]});
+  var a2 = new Agent("a2", [1,3], [], {"a1" : [fun]});
+  var a3 = new Agent("a3", [2,3], [], {"a1" : [fun]});
+  var a4 = new Agent("a4", [1,2,3], [], {"a1" : [fun]});
+
+  var agents = [a1,a2,a3,a4];
 
   while(mailbox.length > 0) {
     var msg = mailbox.shift();
 
     console.log("%j", msg);
 
-    if(msg.to === "a1") {
-      a1.receive(msg);
-    } else if(msg.to === "a2") {
-      a2.receive(msg);
-    } else if(msg.to === "a3") {
-      a3.receive(msg);
+    for(var i=0; i<agents.length; i++) {
+      if(msg.to === agents[i].name) {
+        agents[i].receive(msg);
+      } 
     }
   }
-  console.log("%j", {"a1" : a1, "a2" : a2, "a3" : a3});
+  
+  for(var k in agents) {
+    console.log("%j", agents[k]);
+  }
 };
 
 //main();
