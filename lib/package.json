@@ -1,0 +1,10 @@
+{
+  "name" : "multiagent-agenda-management-lib",
+  "description" : "Library with the abt and stp algorithms",
+  "version" : "0.0.1",
+  "author" : "Vinicius De Antoni <vdeantoni@gmail.com>",
+  "private" : true,
+  "dependencies" : {
+    "underscore" : "1.x"
+  }
+}

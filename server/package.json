@@ -1,0 +1,15 @@
+{
+  "name": "multiagent-agenda-management-server",
+  "description" : "Library with the abt and stp algorithms",
+  "version" : "0.0.1",
+  "author" : "Vinicius De Antoni <vdeantoni@gmail.com>",
+  "private": true,
+  "scripts": {
+    "start": "node app"
+  },
+  "dependencies": {
+    "express": "3.0.3",
+    "jade": "*",
+    "stylus": "*"
+  }
+}
