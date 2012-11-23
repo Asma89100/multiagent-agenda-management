@@ -1,5 +1,24 @@
 extends layout
 
 block content
-  h1= title
-  p Welcome to #{title}
+    h1= title
+  
+    form#login
+        label Please log in:
+            br 
+            input(type="text", name="name")
+        input(type="submit", name="login", value="Login")
+        
+    form#logout.hidden
+        p Welcome, 
+            span#name 
+        input(type="submit", name="logout", value="Logout")
+
+    br
+    br
+    
+    #agenda.hidden
+        form#add
+            input(type="submit", name="add", value="Add")
+        br
+        #calendar
