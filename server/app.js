@@ -42,8 +42,10 @@ app.configure('development', function() {
 
 // routing
 app.get('/', routes.index);
+app.post('/', routes.devnull);
 app.post('/login/:name', routes.login);
 app.post('/logout/', routes.logout);
+app.get('/info/', routes.info);
 
 // start express
 server.listen(app.get('port'), function() {
@@ -57,8 +59,13 @@ var sessionSockets = new ssio(sio.listen(server), sessionStore, cookieParser);
 var connected = {};
 
 sessionSockets.on('connection', function(err, socket, session) {
+    if(session == undefined || session.name == undefined) {
+        socket.disconnect();
+        return;
+    }
+    
     console.log('connect');
-
+    
     db.users[session.name].socket = socket;
 
     socket.on('disconnect', function(data, callback) {

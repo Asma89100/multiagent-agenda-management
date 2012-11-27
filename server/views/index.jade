@@ -3,22 +3,48 @@ extends layout
 block content
     h1= title
   
-    form#login
+    form#login(method="POST")
         label Please log in:
             br 
             input(type="text", name="name")
         input(type="submit", name="login", value="Login")
         
-    form#logout.hidden
-        p Welcome, 
-            span#name 
+    form#logout.hidden(method="POST")
+        h2 Welcome, 
+            span#name
+            | !
         input(type="submit", name="logout", value="Logout")
 
     br
     br
     
     #agenda.hidden
-        form#add
+        form#add(method="POST")
+            h3 New appointment
+            
+            label Description:
+                br
+                input(name="desc", type="text")
+            br
+            
+            span When:
+            br
+            -var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+            select(name="day")
+                each day in days
+                    option(value=day)= day
+            
+            -var hours = [ "7am", "8am", "9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm" ]            
+            select(name="start")
+                each hour in hours
+                    option(value=hour)= hour
+            
+            select(name="end")
+                each hour in hours
+                    option(value=hour)= hour
+            br
+            br
             input(type="submit", name="add", value="Add")
+        br
         br
         #calendar
