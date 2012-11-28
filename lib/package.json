@@ -5,6 +5,7 @@
   "author" : "Vinicius De Antoni <vdeantoni@gmail.com>",
   "private" : true,
   "dependencies" : {
-    "underscore" : "1.x"
+    "underscore" : "1.x",
+    "should"     : "1.x"
   }
 }

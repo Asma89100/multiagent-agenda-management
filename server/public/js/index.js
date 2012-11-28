@@ -1,5 +1,11 @@
 $(function() {
+    // websocket
     var socket = undefined;
+    
+    // STP instance
+    var STP = new stp.STP([],[]);
+    var nodeZero = new stp.Node("0");
+    STP.v.push(nodeZero);
 
     // check if the user is logged in when the page is loaded
     $.ajax({
@@ -91,15 +97,52 @@ $(function() {
         var row1 = hours.indexOf(o.start);
         var row2 = hours.indexOf(o.end);
         
-        var tbody = $("#calendar table tbody:eq(0)");
+        var newNode = new stp.Node(o.desc, row1, row2);
+        var newEdge = new stp.Edge(nodeZero, newNode, -1*newNode.start, newNode.start);
         
-        var td1 = tbody.children("tr:eq("+row1+")").children("td:eq("+column+")");
-        
-        td1.text(o.desc).attr('rowspan', row2-row1).addClass('busy');
-                
-        tbody.children("tr").slice(row1+1, row2).each(function() {
-            $(this).children("td:eq("+column+")").remove();
-        });        
+        try {
+            
+            var min = {v:undefined,n:undefined};
+            for(var k in STP.e) {
+                var edge = STP.e[k];
+                if(edge.vi===nodeZero) {
+                    if(edge.wij < newEdge.wij) {
+                        if(min.v === undefined || min.v < edge.wij) {
+                            min.v = edge.wij;
+                            min.n = edge.vj;
+                        }
+                    } else if(edge.wij === newEdge.wij) {
+                        throw new Error();
+                    }
+                }
+            }
+            
+            STP.v.push(newNode);
+            STP.e.push(newEdge);
+            
+            if(min.n !== undefined) //todo min and max n.start - row1
+                STP.e.push(new stp.Edge(min.n, newNode, -1*min.n.duration, Math.max(min.n.duration, min.n.start-row1)));
+            
+            stp.TP3C.solve(STP);
+            
+            //add to calendar
+            var tbody = $("#calendar table tbody:eq(0)");
+            
+            var td1 = tbody.children("tr:eq("+row1+")").children("td:eq("+column+")");
+            
+            td1.text(o.desc).attr('rowspan', row2-row1).addClass('busy');
+                    
+            tbody.children("tr").slice(row1+1, row2).each(function() {
+                $(this).children("td:eq("+column+")").remove();
+            });
+        } catch(e) {
+            alert('error');
+            
+            if(STP.v.indexOf(newNode) >= 0)
+                STP.v.splice(STP.v.indexOf(newNode), 1);
+            if(STP.e.indexOf(newEdge) >= 0)
+                STP.e.splice(STP.e.indexOf(newEdge), 1);
+        }
         
         return false;
     });
