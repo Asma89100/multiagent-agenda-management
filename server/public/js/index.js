@@ -97,31 +97,49 @@ $(function() {
         var row1 = hours.indexOf(o.start);
         var row2 = hours.indexOf(o.end);
         
-        var newNode = new stp.Node(o.desc, row1, row2);
-        var newEdge = new stp.Edge(nodeZero, newNode, -1*newNode.start, newNode.start);
+        var newNode = new stp.Node(o.desc, row2-row1);
+        var newEdge = new stp.Edge(nodeZero, newNode, -1*row1, row1);
         
         try {
             
-            var min = {v:undefined,n:undefined};
+            var min = {v:undefined,e:undefined};
             for(var k in STP.e) {
                 var edge = STP.e[k];
                 if(edge.vi===nodeZero) {
-                    if(edge.wij < newEdge.wij) {
+                    if(edge.wij <= newEdge.wij) {
                         if(min.v === undefined || min.v < edge.wij) {
                             min.v = edge.wij;
-                            min.n = edge.vj;
+                            min.e = edge;
                         }
-                    } else if(edge.wij === newEdge.wij) {
-                        throw new Error();
                     }
                 }
             }
             
+            var edge_list;
+            
+            if(min.e === undefined) {
+                edge_list = STP.getEdgesOfNode(nodeZero);
+                for(var k in edge_list) {
+                    var edge = edge_list[k];
+                    var start = edge.wij;
+                    STP.e.push(new stp.Edge(newNode, edge.vj, -1*(newNode.duration), Math.max((newNode.duration), Math.abs(row1-start))));
+                }
+            }
+            else {
+                edge_list = STP.getEdgesOfNode(min.e.vj);            
+                for(var k in edge_list) {
+                    var edge = edge_list[k];
+                    var start = _.find(STP.getEdgesOfNode(edge.vj, true), function(e) { return e.vi === nodeZero; }).wij;                        
+                    STP.e.push(new stp.Edge(newNode, edge.vj, -1*(newNode.duration), Math.max((newNode.duration), Math.abs(row1-start))));
+                    
+                    STP.removeEdge(edge);
+                }
+                
+                STP.e.push(new stp.Edge(min.e.vj, newNode, -1*(min.e.vj.duration), Math.max((min.e.vj.duration), Math.abs(min.e.wij-row1))));
+            }                
+            
             STP.v.push(newNode);
             STP.e.push(newEdge);
-            
-            if(min.n !== undefined) //todo min and max n.start - row1
-                STP.e.push(new stp.Edge(min.n, newNode, -1*min.n.duration, Math.max(min.n.duration, min.n.start-row1)));
             
             stp.TP3C.solve(STP);
             
@@ -138,10 +156,14 @@ $(function() {
         } catch(e) {
             alert('error');
             
-            if(STP.v.indexOf(newNode) >= 0)
-                STP.v.splice(STP.v.indexOf(newNode), 1);
-            if(STP.e.indexOf(newEdge) >= 0)
-                STP.e.splice(STP.e.indexOf(newEdge), 1);
+            if(STP.v.indexOf(newNode) >= 0) {
+                var edge_list = STP.getEdgesOfNode(newNode, true);
+                for(var k in edge_list) {
+                    var edge = edge_list[k];
+                    STP.removeEdge(edge);
+                }
+                STP.removeNode(newNode);
+            }
         }
         
         return false;
