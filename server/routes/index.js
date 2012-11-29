@@ -1,7 +1,7 @@
 // index
 exports.index = function(req, res) {
     res.render('index', {
-        title : 'Agenda manager'
+        title : 'My Agenda'
     });
 };
 

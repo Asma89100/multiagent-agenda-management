@@ -38,6 +38,7 @@ app.configure(function() {
     
     app.use(express.static(path.join(__dirname, '../lib/stp')));
     app.use(express.static(path.join(__dirname, '../lib/abt')));
+    app.use(express.static(path.join(__dirname, '../lib/mam')));
 });
 app.configure('development', function() {
     app.use(express.errorHandler());

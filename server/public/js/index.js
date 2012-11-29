@@ -2,10 +2,8 @@ $(function() {
     // websocket
     var socket = undefined;
     
-    // STP instance
-    var STP = new stp.STP([],[]);
-    var nodeZero = new stp.Node("0");
-    STP.v.push(nodeZero);
+    // MAM instance
+    var MAM = new mam();
 
     // check if the user is logged in when the page is loaded
     $.ajax({
@@ -92,56 +90,15 @@ $(function() {
         
         var hours = [ "7am", "8am", "9am", "10am", "11am", "12pm", "1pm",
                       "2pm", "3pm", "4pm", "5pm", "6pm" ];
-
+        
         var column = days.indexOf(o.day) + 1;
         var row1 = hours.indexOf(o.start);
         var row2 = hours.indexOf(o.end);
         
-        var newNode = new stp.Node(o.desc, row2-row1);
-        var newEdge = new stp.Edge(nodeZero, newNode, -1*row1, row1);
+        var d = (column-1)*hours.length;
         
-        try {
-            
-            var min = {v:undefined,e:undefined};
-            for(var k in STP.e) {
-                var edge = STP.e[k];
-                if(edge.vi===nodeZero) {
-                    if(edge.wij <= newEdge.wij) {
-                        if(min.v === undefined || min.v < edge.wij) {
-                            min.v = edge.wij;
-                            min.e = edge;
-                        }
-                    }
-                }
-            }
-            
-            var edge_list;
-            
-            if(min.e === undefined) {
-                edge_list = STP.getEdgesOfNode(nodeZero);
-                for(var k in edge_list) {
-                    var edge = edge_list[k];
-                    var start = edge.wij;
-                    STP.e.push(new stp.Edge(newNode, edge.vj, -1*(newNode.duration), Math.max((newNode.duration), Math.abs(row1-start))));
-                }
-            }
-            else {
-                edge_list = STP.getEdgesOfNode(min.e.vj);            
-                for(var k in edge_list) {
-                    var edge = edge_list[k];
-                    var start = _.find(STP.getEdgesOfNode(edge.vj, true), function(e) { return e.vi === nodeZero; }).wij;                        
-                    STP.e.push(new stp.Edge(newNode, edge.vj, -1*(newNode.duration), Math.max((newNode.duration), Math.abs(row1-start))));
-                    
-                    STP.removeEdge(edge);
-                }
-                
-                STP.e.push(new stp.Edge(min.e.vj, newNode, -1*(min.e.vj.duration), Math.max((min.e.vj.duration), Math.abs(min.e.wij-row1))));
-            }                
-            
-            STP.v.push(newNode);
-            STP.e.push(newEdge);
-            
-            stp.TP3C.solve(STP);
+        try { 
+            MAM.addAppointment({ 'desc' : o.desc, 'start' : row1 + d, 'end' : row2 + d});
             
             //add to calendar
             var tbody = $("#calendar table tbody:eq(0)");
@@ -155,15 +112,6 @@ $(function() {
             });
         } catch(e) {
             alert('error');
-            
-            if(STP.v.indexOf(newNode) >= 0) {
-                var edge_list = STP.getEdgesOfNode(newNode, true);
-                for(var k in edge_list) {
-                    var edge = edge_list[k];
-                    STP.removeEdge(edge);
-                }
-                STP.removeNode(newNode);
-            }
         }
         
         return false;
