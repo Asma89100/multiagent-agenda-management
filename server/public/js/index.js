@@ -4,6 +4,13 @@ $(function() {
     
     // MAM instance
     var MAM = new mam();
+    
+    // days and hours
+    var days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
+                 "Friday", "Saturday" ];
+    
+    var hours = [ "7am", "8am", "9am", "10am", "11am", "12pm", "1pm",
+                  "2pm", "3pm", "4pm", "5pm", "6pm" ];    
 
     // check if the user is logged in when the page is loaded
     $.ajax({
@@ -80,39 +87,12 @@ $(function() {
         return true;
     });
 
-    // add apointment handler
+    // add apointment form handler
     $("form#add").submit(function() {        
         var o = {};
         _.each($(this).serializeArray(), function(obj, key) { o[obj.name] = obj.value; });
         
-        var days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
-                     "Friday", "Saturday" ];
-        
-        var hours = [ "7am", "8am", "9am", "10am", "11am", "12pm", "1pm",
-                      "2pm", "3pm", "4pm", "5pm", "6pm" ];
-        
-        var column = days.indexOf(o.day) + 1;
-        var row1 = hours.indexOf(o.start);
-        var row2 = hours.indexOf(o.end);
-        
-        var d = (column-1)*hours.length;
-        
-        try { 
-            MAM.addAppointment({ 'desc' : o.desc, 'start' : row1 + d, 'end' : row2 + d});
-            
-            //add to calendar
-            var tbody = $("#calendar table tbody:eq(0)");
-            
-            var td1 = tbody.children("tr:eq("+row1+")").children("td:eq("+column+")");
-            
-            td1.text(o.desc).attr('rowspan', row2-row1).addClass('busy');
-                    
-            tbody.children("tr").slice(row1+1, row2).each(function() {
-                $(this).children("td:eq("+column+")").remove();
-            });
-        } catch(e) {
-            alert('error');
-        }
+        addAppointment(o.desc, o.day, o.start, o.end);
         
         return false;
     });
@@ -138,18 +118,67 @@ $(function() {
     // disabled the last possible start hour
     $("form#add select[name=start] :eq(0) option:LAST-CHILD").attr('disabled',
             'true');
+    
+    var removeAppointment = function(a, td) {
+        MAM.removeAppointment(a);
+        td.attr({'rowspan': 1}).removeClass('busy').html("");
+        
+        var id = td.attr("id").split("_");
+        
+        var tr = td.closest("tr");
+        for(var r = 1; r<a.end-a.start; r++) {
+            tr = tr.next("tr");
+            
+            var min = $("td:eq(0)", tr);
+            tr.children("td").each(function(i) {                
+                if($(this).attr("id") !== undefined) {
+                    var c = $(this).attr("id").split("_")[2];
+                    if(c<id[2]) {
+                        min = $(this);
+                    }
+                }
+            });
+            
+            $("<td></td>").attr('id', 'td_'+ (parseInt(id[1])+r) +'_'+id[2]).insertAfter(min);
+        }
+    };
+    
+    var addAppointment = function(desc, day, start, end) {
+        var column = days.indexOf(day);
+        var row1 = hours.indexOf(start);
+        var row2 = hours.indexOf(end);
+        
+        var d = column*hours.length;
+        
+        start = row1 + d;
+        end = row2 + d;
+        
+        try { 
+            var a = MAM.addAppointment(desc, day, start, end);
+            
+            //add to calendar            
+            var td1 = $("#calendar #td_"+row1+"_"+column);
+            
+            td1.attr({'rowspan': row2-row1}).addClass('busy');
+            td1.append($('<div></div>').text(desc));
+            td1.append($('<img></img>').attr({'src' : "/img/remove.png"}).addClass("remove").click(function(){removeAppointment(a, td1);}));
+                    
+            for(var r = row1+1; r<row2; r++) {
+                $("#calendar #td_"+r+"_"+column).remove();
+            }
+        } catch(e) {
+            alert('error');
+        }
+    };
 
     // function to build the calendar
     var buildCalendar = function() {
-        var cal = $("#calendar:eq(0)");
+        var cal = $("#calendar");
         var table = $("<table>");
         var thead = $("<thead>");
         var tbody = $("<tbody>");
 
         cal.html(table.append(thead).append(tbody));
-
-        var days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
-                "Friday", "Saturday" ];
 
         var tr = $("<tr>");
 
@@ -159,17 +188,17 @@ $(function() {
             tr.append($("<td>").text(d));
         });
 
-        thead.append(tr);
+        thead.append(tr);       
 
-        var hours = [ "7am", "8am", "9am", "10am", "11am", "12pm", "1pm",
-                "2pm", "3pm", "4pm", "5pm" ];
-
-        hours.forEach(function(h) {
+        hours.forEach(function(h, i) {
+            if(i==hours.length-1)
+                return;
+            
             var tr = $("<tr>");
             tr.append($("<td>").text(h));
 
-            days.forEach(function(d) {
-                tr.append($("<td>").text(""));
+            days.forEach(function(d, j) {
+                tr.append($("<td>").text("").attr('id' , 'td_'+i+'_'+j));
             });
 
             tbody.append(tr);
