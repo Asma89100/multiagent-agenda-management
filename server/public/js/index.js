@@ -3,7 +3,7 @@ $(function() {
     var socket = undefined;
     
     // MAM instance
-    var MAM = new mam();
+    var MAM = undefined;
     
     // days and hours
     var days = [ "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday",
@@ -32,6 +32,8 @@ $(function() {
         socket = io.connect('http://localhost:3000', {
             'force new connection' : true
         });
+        
+        MAM = new mam(data.name);
 
         $("form#login, form#logout, div#agenda").toggleClass("hidden");
         $("form#logout #name").text(data.name);
@@ -40,6 +42,10 @@ $(function() {
 
     // logout callback
     var logoutSuccess = function() {
+        socket.disconnect();
+        socket = undefined;
+        MAM = undefined;
+        
         $("form#login, form#logout, div#agenda").toggleClass("hidden");
 
         $("form#logout #name").text("");
@@ -154,7 +160,7 @@ $(function() {
         end = row2 + d;
         
         try { 
-            var a = MAM.addAppointment(desc, day, start, end);
+            var a = MAM.addAppointment(desc, start, end);
             
             //add to calendar            
             var td1 = $("#calendar #td_"+row1+"_"+column);
