@@ -10,7 +10,7 @@ $(function() {
                  "Friday", "Saturday" ];
     
     var hours = [ "7am", "8am", "9am", "10am", "11am", "12pm", "1pm",
-                  "2pm", "3pm", "4pm", "5pm", "6pm" ];    
+                  "2pm", "3pm", "4pm", "5pm", "6pm" ];
 
     // check if the user is logged in when the page is loaded
     $.ajax({
@@ -26,6 +26,23 @@ $(function() {
             // alert('error.');
         }
     });
+    
+    var mailbox = {
+            push : function(msg) {
+                console.log("PUSH: " + msg);
+                socket.emit('msg', { 'msg' : msg });
+            }
+    };
+    
+    var callback = function(action, a) {
+        console.log(action);
+        
+        if(action == "ADD") {
+            addAppointmentToCalendar(a);
+        } else if(action == "DEL") {
+            removeAppointmentFromCalendar(a);
+        }
+    };
 
     // login callback
     var loginSuccess = function(data) {
@@ -33,7 +50,12 @@ $(function() {
             'force new connection' : true
         });
         
-        MAM = new mam(data.name);
+        socket.on('msg', function (data) {
+            console.log("RECEIVE: " + data.msg);
+            MAM.handleMessage(data.msg);
+        });
+        
+        MAM = new mam(data.name, mailbox, callback);
 
         $("form#login, form#logout, div#agenda").toggleClass("hidden");
         $("form#logout #name").text(data.name);
@@ -98,7 +120,12 @@ $(function() {
         var o = {};
         _.each($(this).serializeArray(), function(obj, key) { o[obj.name] = obj.value; });
         
-        addAppointment(o.desc, o.day, o.start, o.end);
+        var invitees = o.invitees.split(",");
+        
+        if(invitees.length == 0 || (invitees.length == 1 && invitees[0] == ""))
+            invitees = undefined;        
+        
+        addAppointment(o.desc, o.day, o.start, o.end, invitees);
         
         return false;
     });
@@ -125,8 +152,19 @@ $(function() {
     $("form#add select[name=start] :eq(0) option:LAST-CHILD").attr('disabled',
             'true');
     
-    var removeAppointment = function(a, td) {
+    var removeAppointment = function(a) {
         MAM.removeAppointment(a);
+        
+        removeAppointmentFromCalendar(a);
+    };
+    
+    var removeAppointmentFromCalendar = function(a) {
+        var column = (a.start / hours.length) >> 0;
+        var row1 = a.start - (hours.length * column);
+        
+        var td = $("#calendar #td_"+row1+"_"+column);
+        
+        
         td.attr({'rowspan': 1}).removeClass('busy').html("");
         
         var id = td.attr("id").split("_");
@@ -146,10 +184,10 @@ $(function() {
             });
             
             $("<td></td>").attr('id', 'td_'+ (parseInt(id[1])+r) +'_'+id[2]).insertAfter(min);
-        }
+        }  
     };
     
-    var addAppointment = function(desc, day, start, end) {
+    var addAppointment = function(desc, day, start, end, invitees) {
         var column = days.indexOf(day);
         var row1 = hours.indexOf(start);
         var row2 = hours.indexOf(end);
@@ -159,21 +197,34 @@ $(function() {
         start = row1 + d;
         end = row2 + d;
         
+        if(invitees) {
+            MAM.createSharedAppointment(desc, start, end, 1, invitees);
+            return;
+        }
+        
         try { 
             var a = MAM.addAppointment(desc, start, end);
             
-            //add to calendar            
-            var td1 = $("#calendar #td_"+row1+"_"+column);
-            
-            td1.attr({'rowspan': row2-row1}).addClass('busy');
-            td1.append($('<div></div>').text(desc));
-            td1.append($('<img></img>').attr({'src' : "/img/remove.png"}).addClass("remove").click(function(){removeAppointment(a, td1);}));
-                    
-            for(var r = row1+1; r<row2; r++) {
-                $("#calendar #td_"+r+"_"+column).remove();
-            }
+            //add to calendar
+            addAppointmentToCalendar(a);
         } catch(e) {
             alert('error');
+        }
+    };
+    
+    var addAppointmentToCalendar = function(a) {
+        var column = (a.start / hours.length) >> 0;
+        var row1 = a.start - (hours.length * column);
+        var row2 = a.end - (hours.length * column);
+        
+        var td1 = $("#calendar #td_"+row1+"_"+column);
+        
+        td1.attr({'rowspan': row2-row1}).addClass('busy');
+        td1.append($('<div></div>').text(a.desc));
+        td1.append($('<img></img>').attr({'src' : "/img/remove.png"}).addClass("remove").click(function(){removeAppointment(a);}));
+                
+        for(var r = row1+1; r<row2; r++) {
+            $("#calendar #td_"+r+"_"+column).remove();
         }
     };
 

@@ -72,7 +72,11 @@ sessionSockets.on('connection', function(err, socket, session) {
     
     db.users[session.name].socket = socket;
 
-    socket.on('disconnect', function(data, callback) {
+    socket.on('disconnect', function(data) {
         console.log('disconnect');
+    });
+    
+    socket.on('msg', function(data) {
+        db.users[data.msg.to].socket.emit('msg', { msg : data.msg });
     });
 });
