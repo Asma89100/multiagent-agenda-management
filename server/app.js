@@ -26,7 +26,8 @@ app.configure(function() {
     app.use(express.methodOverride());
     app.use(cookieParser);
     app.use(express.session({
-        store : sessionStore
+        store : sessionStore,
+        cookie: { path: '/', maxAge: null }
     }));
     app.use(function(req, res, next) {
         req.db = db;
@@ -62,21 +63,19 @@ var sessionSockets = new ssio(sio.listen(server), sessionStore, cookieParser);
 // socket.io handler
 var connected = {};
 
-sessionSockets.on('connection', function(err, socket, session) {
-    if(session == undefined || session.name == undefined) {
-        socket.disconnect();
-        return;
-    }
+sessionSockets.on('connection', function(err, socket, session) {    
+    socket.on('login', function(data) {
+        db.users[session.name].socket = socket;
+    });    
     
-    console.log('connect');
-    
-    db.users[session.name].socket = socket;
+    socket.on('logout', function(data) {
+    });
 
     socket.on('disconnect', function(data) {
-        console.log('disconnect');
     });
     
     socket.on('msg', function(data) {
-        db.users[data.msg.to].socket.emit('msg', { msg : data.msg });
+        if(db.users[data.msg.to] != undefined)
+            db.users[data.msg.to].socket.emit('msg', { msg : data.msg });
     });
 });

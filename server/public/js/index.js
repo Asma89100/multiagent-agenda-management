@@ -1,6 +1,6 @@
 $(function() {
     // websocket
-    var socket = undefined;
+    var socket= undefined;
     
     // MAM instance
     var MAM = undefined;
@@ -35,25 +35,27 @@ $(function() {
     };
     
     var callback = function(action, a) {
-        console.log(action);
         
-        if(action == "ADD") {
+        if(action == "OK") {
             addAppointmentToCalendar(a);
-        } else if(action == "DEL") {
+        } else if(action == "CANCELED") {
             removeAppointmentFromCalendar(a);
+        } else if(action == "FAILED") {
+            alert(a+" failed");
         }
     };
 
     // login callback
     var loginSuccess = function(data) {
-        socket = io.connect('http://localhost:3000', {
-            'force new connection' : true
-        });
+        socket = io.connect('http://localhost:3000');
         
+        //msg handler
         socket.on('msg', function (data) {
             console.log("RECEIVE: " + data.msg);
             MAM.handleMessage(data.msg);
         });
+        
+        socket.emit('login', { 'name' : data.name });
         
         MAM = new mam(data.name, mailbox, callback);
 
@@ -64,8 +66,8 @@ $(function() {
 
     // logout callback
     var logoutSuccess = function() {
-        socket.disconnect();
-        socket = undefined;
+        socket.emit('logout', {});
+        
         MAM = undefined;
         
         $("form#login, form#logout, div#agenda").toggleClass("hidden");
@@ -125,7 +127,7 @@ $(function() {
         if(invitees.length == 0 || (invitees.length == 1 && invitees[0] == ""))
             invitees = undefined;        
         
-        addAppointment(o.desc, o.day, o.start, o.end, invitees);
+        addAppointment(o.subject, o.day, o.start, o.end, invitees);
         
         return false;
     });
@@ -187,7 +189,7 @@ $(function() {
         }  
     };
     
-    var addAppointment = function(desc, day, start, end, invitees) {
+    var addAppointment = function(subject, day, start, end, invitees) {
         var column = days.indexOf(day);
         var row1 = hours.indexOf(start);
         var row2 = hours.indexOf(end);
@@ -198,12 +200,12 @@ $(function() {
         end = row2 + d;
         
         if(invitees) {
-            MAM.createSharedAppointment(desc, start, end, 1, invitees);
+            MAM.createSharedAppointment(subject, start, end, 1, invitees);
             return;
         }
         
         try { 
-            var a = MAM.addAppointment(desc, start, end);
+            var a = MAM.addAppointment(subject, start, end);
             
             //add to calendar
             addAppointmentToCalendar(a);
@@ -220,8 +222,7 @@ $(function() {
         var td1 = $("#calendar #td_"+row1+"_"+column);
         
         td1.attr({'rowspan': row2-row1}).addClass('busy');
-        td1.append($('<div></div>').text(a.desc));
-        td1.append($('<img></img>').attr({'src' : "/img/remove.png"}).addClass("remove").click(function(){removeAppointment(a);}));
+        td1.append($('<div></div>').text(a.subject).append($('<img></img>').attr({'src' : "/img/remove.png"}).addClass("remove").click(function(){removeAppointment(a);})));
                 
         for(var r = row1+1; r<row2; r++) {
             $("#calendar #td_"+r+"_"+column).remove();

@@ -16,18 +16,21 @@ exports.login = function(req, res) {
         res.send(403, {});
     } else {
         req.session.name = req.params.name;
+        req.session.save();
         req.db.users[req.params.name] = {};
         res.send(200, { 'name' : req.session.name });        
     }
 };
 
 // logout
-exports.logout = function(req, res) {
+exports.logout = function(req, res) {    
     if(req.session.name !== undefined) {
-	    req.db.users[req.session.name].socket.disconnect();
 	    delete req.db.users[req.session.name];
-	    req.session.destroy();
-	}    
+	}
+	
+	delete req.session['name'];
+	req.session.save();
+	 
     res.send(200, {});
 };
 
