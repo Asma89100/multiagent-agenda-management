@@ -26,24 +26,31 @@ block content
                 br
                 input(name="subject", type="text")
             br
-            
-            span When:
             br
+            
             -var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+            label Day: &nbsp;
             select(name="day")
                 each day in days
                     option(value=day)= day
             
+            br
             -var hours = [ "7am", "8am", "9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm" ]            
+            label From:  &nbsp;
             select(name="start")
                 each hour in hours
                     option(value=hour)= hour
             
+            label &nbsp; To: &nbsp;
             select(name="end")
                 each hour in hours
                     option(value=hour)= hour
-            br
             
+            span  &nbsp; or &nbsp;
+            label Duration:  &nbsp;
+                input(name="duration", type="text", size="4")
+            br
+            br
             span Invitees: (Comma separated)
             br
             textarea(name="invitees")

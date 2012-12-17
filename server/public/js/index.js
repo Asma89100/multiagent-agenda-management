@@ -127,7 +127,7 @@ $(function() {
         if(invitees.length == 0 || (invitees.length == 1 && invitees[0] == ""))
             invitees = undefined;        
         
-        addAppointment(o.subject, o.day, o.start, o.end, invitees);
+        addAppointment(o.subject, o.day, o.start, o.end, o.duration, invitees);
         
         return false;
     });
@@ -145,7 +145,9 @@ $(function() {
             }
         });
 
-        end.prop("selectedIndex", start.prop("selectedIndex") + 1);
+        if(end.prop("selectedIndex") <= start.prop("selectedIndex")) {
+            end.prop("selectedIndex", start.prop("selectedIndex") + 1);
+        }
 
         return true;
     }).change();
@@ -154,10 +156,34 @@ $(function() {
     $("form#add select[name=start] :eq(0) option:LAST-CHILD").attr('disabled',
             'true');
     
+    // disabled start and end times when duration is determined
+    $("form#add input[name=duration] :eq(0)").keyup(function() {        
+        if($(this).val()) {
+            $("form#add select[name=start] :eq(0)").attr('disabled', 'true');
+            $("form#add select[name=end] :eq(0)").attr('disabled', 'true');
+        } else {
+            $("form#add select[name=start] :eq(0)").removeAttr('disabled');
+            $("form#add select[name=end] :eq(0)").removeAttr('disabled');
+        }
+    });
+    
+    //min duration = 1, max = 11
+    $("form#add input[name=duration] :eq(0)").change(function() {
+        if($(this).val()) {
+            if($(this).val() < 1) {
+                $(this).val(1);
+            } else if($(this).val() > 11) {
+                $(this).val(11);
+            }
+        }
+    });
+
+    
     var removeAppointment = function(a) {
         MAM.removeAppointment(a);
         
-        removeAppointmentFromCalendar(a);
+        if(a.invitees == undefined)
+            removeAppointmentFromCalendar(a);
     };
     
     var removeAppointmentFromCalendar = function(a) {
@@ -165,7 +191,6 @@ $(function() {
         var row1 = a.start - (hours.length * column);
         
         var td = $("#calendar #td_"+row1+"_"+column);
-        
         
         td.attr({'rowspan': 1}).removeClass('busy').html("");
         
@@ -189,18 +214,29 @@ $(function() {
         }  
     };
     
-    var addAppointment = function(subject, day, start, end, invitees) {
+    var addAppointment = function(subject, day, start, end, duration, invitees) {
         var column = days.indexOf(day);
-        var row1 = hours.indexOf(start);
-        var row2 = hours.indexOf(end);
-        
         var d = column*hours.length;
         
-        start = row1 + d;
-        end = row2 + d;
+        if(duration) {
+            duration = parseInt(duration);
+            
+            var list = MAM.getAvailableHours(d,11+d,duration);
+            if(list ==undefined || list.length == 0) {
+                alert('error');
+                return;
+            }
+            
+            start = list[0];
+            end = start + duration;
+        } else {
+            start = hours.indexOf(start) + d;
+            end = hours.indexOf(end) + d;
+            duration = end-start;
+        }
         
         if(invitees) {
-            MAM.createSharedAppointment(subject, start, end, 1, invitees);
+            MAM.createSharedAppointment(subject, [start], duration, invitees);
             return;
         }
         
