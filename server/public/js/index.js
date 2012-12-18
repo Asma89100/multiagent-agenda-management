@@ -47,7 +47,7 @@ $(function() {
 
     // login callback
     var loginSuccess = function(data) {
-        socket = io.connect();
+        socket = io.connect('/');
         
         //msg handler
         socket.on('msg', function (data) {

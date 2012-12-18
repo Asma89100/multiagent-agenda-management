@@ -59,9 +59,9 @@ server.listen(app.get('port'), function() {
 
 // start socket.io
 sio = sio.listen(server);
-sio.configure('production', function(){
-    sio.set('transports', ['websocket']);
-});
+//sio.configure('production', function(){
+//    sio.set('transports', ['websocket']);
+//});
 
 var sessionSockets = new ssio(sio, sessionStore, cookieParser);
 
@@ -70,7 +70,7 @@ var connected = {};
 
 sessionSockets.on('connection', function(err, socket, session) {    
     socket.on('login', function(data) {
-        db.users[session.name].socket = socket;
+        db.users[data.name].socket = socket;
     });    
     
     socket.on('logout', function(data) {
