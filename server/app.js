@@ -59,7 +59,7 @@ server.listen(app.get('port'), function() {
 
 // start socket.io
 sio = sio.listen(server);
-io.configure('production', function(){
+sio.configure('production', function(){
     sio.set('transports', ['websocket']);
 });
 
