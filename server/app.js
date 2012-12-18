@@ -59,7 +59,9 @@ server.listen(app.get('port'), function() {
 
 // start socket.io
 sio = sio.listen(server);
-sio.set('transports', ['websocket']);
+io.configure('production', function(){
+    sio.set('transports', ['websocket']);
+});
 
 var sessionSockets = new ssio(sio, sessionStore, cookieParser);
 
