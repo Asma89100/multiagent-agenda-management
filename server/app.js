@@ -58,7 +58,10 @@ server.listen(app.get('port'), function() {
 });
 
 // start socket.io
-var sessionSockets = new ssio(sio.listen(server), sessionStore, cookieParser);
+sio = sio.listen(server);
+sio.set('transports', ['websocket']);
+
+var sessionSockets = new ssio(sio, sessionStore, cookieParser);
 
 // socket.io handler
 var connected = {};
