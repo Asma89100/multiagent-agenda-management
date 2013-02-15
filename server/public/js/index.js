@@ -227,6 +227,11 @@ $(function() {
                 return;
             }
             
+            if(invitees) {
+                MAM.createSharedAppointment(subject, list, duration, invitees);
+                return;
+            }
+            
             start = list[0];
             end = start + duration;
         } else {
