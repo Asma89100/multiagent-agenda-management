@@ -29,7 +29,7 @@ $(function() {
     
     var mailbox = {
             push : function(msg) {
-                console.log("PUSH: " + msg);
+                console.log("PUSH: " + JSON.stringify(msg));
                 socket.emit('msg', { 'msg' : msg });
             }
     };
@@ -51,7 +51,7 @@ $(function() {
         
         //msg handler
         socket.on('msg', function (data) {
-            console.log("RECEIVE: " + data.msg);
+            console.log("RECEIVE: " + JSON.stringify(data.msg));
             MAM.handleMessage(data.msg);
         });
         
